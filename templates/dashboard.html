@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeDB - Database Migration Tool</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            /* Light theme variables */
+            --light-bg: #f5f7fa;
+            --light-card-bg: #ffffff;
+            --light-text: #212529;
+            --light-border: rgba(0,0,0,.125);
+            --light-input-bg: #ffffff;
+            
+            /* Dark theme variables - matching login page */
+            --dark-bg: #141b33;
+            --dark-card-bg: #1e2745;
+            --dark-text: #e9ecef;
+            --dark-border: rgba(255,255,255,.125);
+            --dark-input-bg: #283150;
+            
+            /* Common variables */
+            --primary-color: #7b68ee;
+            --primary-hover: #6a5acd;
+            --secondary-color: #4cc9f0;
+            --success-color: #4CAF50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+        }
+        
+        /* Theme-specific styles */
+        [data-bs-theme="light"] {
+            --bg-color: var(--light-bg);
+            --card-bg: var(--light-card-bg);
+            --text-color: var(--light-text);
+            --border-color: var(--light-border);
+            --input-bg: var(--light-input-bg);
+            --step-inactive-bg: #e9ecef;
+            --step-inactive-text: #6c757d;
+            --step-connector-bg: #dee2e6;
+        }
+        
+        [data-bs-theme="dark"] {
+            --bg-color: var(--dark-bg);
+            --card-bg: var(--dark-card-bg);
+            --text-color: var(--dark-text);
+            --border-color: var(--dark-border);
+            --input-bg: var(--dark-input-bg);
+            --step-inactive-bg: #283150;
+            --step-inactive-text: #9ca3af;
+            --step-connector-bg: #374151;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.2);
+            background-color: var(--card-bg);
+        }
+        
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .user-dropdown .dropdown-toggle::after {
+            display: none;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: 0 2px 20px rgba(0,0,0,.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+            background-color: var(--card-bg);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            font-weight: 600;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+        
+        /* Enhanced Step Indicator */
+        .wizard-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .wizard-steps::before {
+            content: '';
+            position: absolute;
+            top: 34px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--step-connector-bg);
+            z-index: -1;
+        }
+        
+        .wizard-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .step-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--step-inactive-bg);
+            color: var(--step-inactive-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--step-connector-bg);
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .wizard-step.active .step-icon {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.3);
+        }
+        
+        .wizard-step.completed .step-icon {
+            background-color: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+        
+        .wizard-step .step-icon i {
+            font-size: 1.75rem;
+            opacity: 0.9;
+        }
+        
+        .wizard-step .step-title {
+            font-weight: 600;
+            margin-top: 5px;
+            color: var(--step-inactive-text);
+            transition: color 0.3s ease;
+        }
+        
+        .wizard-step.active .step-title {
+            color: var(--primary-color);
+        }
+        
+        .wizard-step.completed .step-title {
+            color: var(--success-color);
+        }
+        
+        /* Enhanced Tabs */
+        .wizard-tabs {
+            margin-top: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+            scrollbar-width: none;  /* Hide scrollbar for Firefox */
+        }
+        
+        .wizard-tabs::-webkit-scrollbar {
+            display: none; /* Hide scrollbar for Chrome, Safari and Opera */
+        }
+        
+        .wizard-tab {
+            padding: 1rem 2rem;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            font-weight: 500;
+            position: relative;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            outline: none !important;
+        }
+        
+        .wizard-tab:after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+        
+        .wizard-tab.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .wizard-tab.active:after {
+            background-color: var(--primary-color);
+        }
+        
+        .wizard-tab.completed {
+            color: var(--success-color);
+        }
+        
+        .wizard-tab.completed:after {
+            background-color: var(--success-color);
+        }
+        
+        .wizard-tab-content {
+            padding: 1.5rem 0;
+        }
+        
+        /* Form styling */
+        .form-label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+            box-shadow: none;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(123, 104, 238, 0.25);
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+        
+        .migration-status {
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--input-bg);
+            margin-bottom: 20px;
+        }
+        
+        .migration-status.running {
+            background-color: rgba(76, 201, 240, 0.15);
+        }
+        
+        .migration-status.completed {
+            background-color: rgba(76, 175, 80, 0.15);
+        }
+        
+        .migration-status.failed {
+            background-color: rgba(244, 67, 54, 0.15);
+        }
+        
+        .progress {
+            height: 10px;
+            margin: 10px 0;
+            background-color: var(--input-bg);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .database-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            background-color: var(--input-bg);
+        }
+        
+        .table-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            color: var(--text-color);
+            opacity: 0.7;
+            font-size: 0.9rem;
+            margin-top: 40px;
+        }
+        
+        /* Loading spinner */
+        .loading {
+            display: none;
+        }
+        
+        .spinner-border {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        
+        /* Theme toggle switch */
+        .theme-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            margin: 0;
+        }
+
+        .theme-switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .theme-icon {
+            position: absolute;
+            top: 6px;
+            font-size: 14px;
+            color: white;
+            z-index: 1;
+        }
+        
+        .theme-icon.sun {
+            right: 8px;
+        }
+        
+        .theme-icon.moon {
+            left: 8px;
+        }
+        
+        /* Table styles */
+        .table {
+            color: var(--text-color);
+        }
+        
+        /* Dropdown styles */
+        .dropdown-menu {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .dropdown-item {
+            color: var(--text-color);
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--input-bg);
+        }
+        
+        /* Fix text overflow */
+        .text-truncate {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-database me-2"></i>
+                BridgeDB
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/"><i class="fas fa-home me-1"></i> Dashboard</a>
+                    </li>
+                </ul>
+                
+                <!-- Theme Switch -->
+                <div class="d-flex align-items-center me-3">
+                    <label class="theme-switch me-2" for="themeSwitch">
+                        <input type="checkbox" id="themeSwitch" checked>
+                        <span class="slider"></span>
+                        <i class="fas fa-sun theme-icon sun"></i>
+                        <i class="fas fa-moon theme-icon moon"></i>
+                    </label>
+                </div>
+                
+                <div class="dropdown user-dropdown">
+                    <button class="btn dropdown-toggle d-flex align-items-center" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% if user.get('picture') %}
+                        <img src="{{ user.get('picture') }}" alt="{{ user.get('email', 'User') }}" class="avatar">
+                        {% else %}
+                        <div class="avatar">{{ user.get('email', 'U')[:1].upper() }}</div>
+                        {% endif %}
+                        <span>{{ user.get('email', user.get('sub', 'UjjwalKo')) }}</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i> Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="/logout"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">Migration Wizard</h4>
+                        
+                        <!-- Enhanced Step Indicator -->
+                        <div class="wizard-steps">
+                            <div class="wizard-step active" id="step1">
+                                <div class="step-icon">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <div class="step-title">Source</div>
+                            </div>
+                            <div class="wizard-step" id="step2">
+                                <div class="step-icon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <div class="step-title">Destination</div>
+                            </div>
+                            <div class="wizard-step" id="step3">
+                                <div class="step-icon">
+                                    <i class="fas fa-table"></i>
+                                </div>
+                                <div class="step-title">Select Data</div>
+                            </div>
+                            <div class="wizard-step" id="step4">
+                                <div class="step-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <div class="step-title">Migrate</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Enhanced Tabs -->
+                        <div class="wizard-tabs">
+                            <button class="wizard-tab active" id="source-tab" data-target="source">Source Database</button>
+                            <button class="wizard-tab" id="destination-tab" data-target="destination">Destination Database</button>
+                            <button class="wizard-tab" id="data-tab" data-target="data">Select Data</button>
+                            <button class="wizard-tab" id="migrate-tab" data-target="migrate">Migration</button>
+                        </div>
+                        
+                        <!-- Tab Content -->
+                        <div class="wizard-tab-content">
+                            <!-- Source Database Tab -->
+                            <div class="tab-pane active" id="source">
+                                <h6 class="mb-3">Configure your source database connection</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="sourceDbType" class="form-label">Database Type</label>
+                                    <select class="form-select" id="sourceDbType">
+                                        <option value="" selected disabled>Select Database Type</option>
+                                        <option value="mysql">MySQL</option>
+                                        <option value="postgresql">PostgreSQL</option>
+                                        <option value="oracle">Oracle</option>
+                                        <option value="sqlserver">SQL Server</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sourceHost" class="form-label">Host</label>
+                                        <input type="text" class="form-control" id="sourceHost" placeholder="localhost">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sourcePort" class="form-label">Port</label>
+                                        <input type="text" class="form-control" id="sourcePort" placeholder="3306">
+                                    </div>
+                                </div>
+                                
+                                <div id="sourceOracleFields" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="sourceServiceName" class="form-label">Service Name</label>
+                                        <input type="text" class="form-control" id="sourceServiceName" placeholder="ORCL">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sourceUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="sourceUsername" placeholder="root">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sourcePassword" class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="sourcePassword">
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary" id="sourceConnectBtn">
+                                    <span class="spinner-border spinner-border-sm loading" id="sourceConnectSpinner"></span>
+                                    Connect to Source
+                                </button>
+                                
+                                <div class="alert alert-success mt-3" style="display: none;" id="sourceConnectSuccess">
+                                    <i class="fas fa-check-circle"></i> Successfully connected to source database!
+                                </div>
+                                
+                                <div class="alert alert-danger mt-3" style="display: none;" id="sourceConnectError">
+                                    <i class="fas fa-exclamation-circle"></i> <span id="sourceErrorMessage"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Destination Database Tab -->
+                            <div class="tab-pane" id="destination" style="display: none;">
+                                <h6 class="mb-3">Configure your destination database connection</h6>
+                                
+                                <div class="mb-3">
+                                    <label for="destDbType" class="form-label">Database Type</label>
+                                    <select class="form-select" id="destDbType">
+                                        <option value="" selected disabled>Select Database Type</option>
+                                        <option value="mysql">MySQL</option>
+                                        <option value="postgresql">PostgreSQL</option>
+                                        <option value="oracle">Oracle</option>
+                                        <option value="sqlserver">SQL Server</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="destHost" class="form-label">Host</label>
+                                        <input type="text" class="form-control" id="destHost" placeholder="localhost">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="destPort" class="form-label">Port</label>
+                                        <input type="text" class="form-control" id="destPort" placeholder="3306">
+                                    </div>
+                                </div>
+                                
+                                <div id="destOracleFields" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="destServiceName" class="form-label">Service Name</label>
+                                        <input type="text" class="form-control" id="destServiceName" placeholder="ORCL">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="destUsername" class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="destUsername" placeholder="root">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="destPassword" class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="destPassword">
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary" id="destConnectBtn">
+                                    <span class="spinner-border spinner-border-sm loading" id="destConnectSpinner"></span>
+                                    Connect to Destination
+                                </button>
+                                
+                                <div class="alert alert-success mt-3" style="display: none;" id="destConnectSuccess">
+                                    <i class="fas fa-check-circle"></i> Successfully connected to destination database!
+                                </div>
+                                
+                                <div class="alert alert-danger mt-3" style="display: none;" id="destConnectError">
+                                    <i class="fas fa-exclamation-circle"></i> <span id="destErrorMessage"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Select Data Tab -->
+                            <div class="tab-pane" id="data" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Select Source Databases</h6>
+                                        <div class="database-list mb-3" id="sourceDatabasesList">
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="fas fa-database mb-2 d-block" style="font-size: 2rem;"></i>
+                                                Connect to source database first
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Select Tables</h6>
+                                        <div class="database-list" id="sourceTablesList">
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="fas fa-table mb-2 d-block" style="font-size: 2rem;"></i>
+                                                Select a database to view tables
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <h6 class="mb-2">Destination Database</h6>
+                                    <select class="form-select" id="destDatabaseSelect">
+                                        <option value="" selected disabled>Select Destination Database</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <button class="btn btn-primary" id="validateSelectionBtn">
+                                        <span class="spinner-border spinner-border-sm loading" id="validateSpinner"></span>
+                                        Validate Selection
+                                    </button>
+                                    <div class="alert alert-success mt-3" style="display: none;" id="validateSuccess">
+                                        <i class="fas fa-check-circle"></i> Selection is valid and ready for migration!
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Migration Tab -->
+                            <div class="tab-pane" id="migrate" style="display: none;">
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="mb-3">Migration Summary</h6>
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <strong>Source:</strong> <span id="summarySource">Not configured</span><br>
+                                                        <strong>Tables:</strong> <span id="summaryTables">None selected</span>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <strong>Destination:</strong> <span id="summaryDestination">Not configured</span><br>
+                                                        <strong>Estimated Size:</strong> <span id="summarySize">Unknown</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6 class="mb-0">Migration Options</h6>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="optCreateTables" checked>
+                                                    <label class="form-check-label" for="optCreateTables">
+                                                        Create tables if not exist
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="optTruncateTables">
+                                                    <label class="form-check-label" for="optTruncateTables">
+                                                        Truncate destination tables before migration
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6">
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="optIncludeIndexes" checked>
+                                                    <label class="form-check-label" for="optIncludeIndexes">
+                                                        Include indexes
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="optTransactional" checked>
+                                                    <label class="form-check-label" for="optTransactional">
+                                                        Use transactions
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="mb-3">Migration Progress</h6>
+                                        
+                                        <div class="migration-status" id="migrationStatus">
+                                            <div class="text-center py-4 text-muted">
+                                                <i class="fas fa-database mb-2 d-block" style="font-size: 2rem;"></i>
+                                                Start the migration to see progress
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="progress mb-3" style="display: none;" id="migrationProgress">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        
+                                        <button class="btn btn-primary" id="startMigrationBtn">
+                                            <i class="fas fa-play me-2"></i> Start Migration
+                                        </button>
+                                        
+                                        <button class="btn btn-danger" id="cancelMigrationBtn" style="display: none;">
+                                            <i class="fas fa-stop me-2"></i> Cancel Migration
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Migration History Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Migrations</h5>
+                        <button class="btn btn-sm btn-outline-primary" id="refreshHistoryBtn">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Source</th>
+                                        <th>Destination</th>
+                                        <th>Tables</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Duration</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>-</td>
+                                        <td colspan="7" class="text-center">No recent migrations</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>BridgeDB v1.0.0 | &copy; 2025 UjjwalKo | Last updated: 2025-08-09 17:39:04</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main JavaScript -->
+    <script>
+        // Theme switcher
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get the theme toggle element
+            const themeSwitch = document.getElementById('themeSwitch');
+            
+            // Check for saved theme preference or use preferred color scheme
+            const savedTheme = localStorage.getItem('theme') || 
+                (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            // Apply the saved theme
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+                themeSwitch.checked = true;
+            } else {
+                document.documentElement.setAttribute('data-bs-theme', 'light');
+                themeSwitch.checked = false;
+            }
+            
+            // Handle theme toggle click
+            themeSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    document.documentElement.setAttribute('data-bs-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.setAttribute('data-bs-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+
+            // Enhanced Tab Navigation
+            const wizardTabs = document.querySelectorAll('.wizard-tab');
+            wizardTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Hide all tab panes
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.style.display = 'none';
+                        pane.classList.remove('active');
+                    });
+                    
+                    // Remove active class from all tabs
+                    wizardTabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Show the selected tab pane
+                    const targetId = this.getAttribute('data-target');
+                    const targetPane = document.getElementById(targetId);
+                    targetPane.style.display = 'block';
+                    targetPane.classList.add('active');
+                    
+                    // Add active class to the clicked tab
+                    this.classList.add('active');
+                    
+                    // Update step indicator
+                    updateStepIndicator(targetId);
+                });
+            });
+
+            // Function to update step indicator
+            function updateStepIndicator(targetId) {
+                const stepMap = {
+                    'source': 'step1',
+                    'destination': 'step2',
+                    'data': 'step3',
+                    'migrate': 'step4'
+                };
+                
+                // Remove active class from all steps
+                document.querySelectorAll('.wizard-step').forEach(step => {
+                    step.classList.remove('active');
+                });
+                
+                // Add active class to current step
+                const stepId = stepMap[targetId];
+                document.getElementById(stepId).classList.add('active');
+            }
+        });
+        
+        // Show/hide Oracle specific fields based on database type selection
+        document.getElementById('sourceDbType').addEventListener('change', function() {
+            if (this.value === 'oracle') {
+                document.getElementById('sourceOracleFields').style.display = 'block';
+            } else {
+                document.getElementById('sourceOracleFields').style.display = 'none';
+            }
+        });
+        
+        document.getElementById('destDbType').addEventListener('change', function() {
+            if (this.value === 'oracle') {
+                document.getElementById('destOracleFields').style.display = 'block';
+            } else {
+                document.getElementById('destOracleFields').style.display = 'none';
+            }
+        });
+        
+        // Source connection
+        document.getElementById('sourceConnectBtn').addEventListener('click', function() {
+            const dbType = document.getElementById('sourceDbType').value;
+            const host = document.getElementById('sourceHost').value;
+            const port = document.getElementById('sourcePort').value;
+            const username = document.getElementById('sourceUsername').value;
+            const password = document.getElementById('sourcePassword').value;
+            
+            if (!dbType || !host || !port || !username) {
+                document.getElementById('sourceErrorMessage').textContent = 'Please fill in all required fields';
+                document.getElementById('sourceConnectError').style.display = 'block';
+                document.getElementById('sourceConnectSuccess').style.display = 'none';
+                return;
+            }
+            
+            // Show loading spinner
+            document.getElementById('sourceConnectSpinner').style.display = 'inline-block';
+            document.getElementById('sourceConnectBtn').disabled = true;
+            
+            const config = {
+                host: host,
+                port: port,
+                username: username,
+                password: password
+            };
+            
+            if (dbType === 'oracle') {
+                config.service_name = document.getElementById('sourceServiceName').value;
+            }
+            
+            // Make API call to connect
+            fetch('/api/connect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    connection_id: 'source',
+                    db_type: dbType,
+                    config: config
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading spinner
+                document.getElementById('sourceConnectSpinner').style.display = 'none';
+                document.getElementById('sourceConnectBtn').disabled = false;
+                
+                if (data.status === 'success') {
+                    document.getElementById('sourceConnectSuccess').style.display = 'block';
+                    document.getElementById('sourceConnectError').style.display = 'none';
+                    
+                    // Update step indicator - mark step 1 as completed
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('step1').classList.add('completed');
+                    document.getElementById('step2').classList.add('active');
+                    
+                    // Update tabs - mark source as completed
+                    document.getElementById('source-tab').classList.add('completed');
+                    
+                    // Switch to destination tab
+                    document.getElementById('destination-tab').click();
+                } else {
+                    document.getElementById('sourceErrorMessage').textContent = data.message || 'Connection failed';
+                    document.getElementById('sourceConnectError').style.display = 'block';
+                    document.getElementById('sourceConnectSuccess').style.display = 'none';
+                }
+            })
+            .catch(error => {
+                document.getElementById('sourceConnectSpinner').style.display = 'none';
+                document.getElementById('sourceConnectBtn').disabled = false;
+                document.getElementById('sourceErrorMessage').textContent = 'Connection failed: ' + error.message;
+                document.getElementById('sourceConnectError').style.display = 'block';
+                document.getElementById('sourceConnectSuccess').style.display = 'none';
+            });
+        });
+
+        // Destination connection
+        document.getElementById('destConnectBtn').addEventListener('click', function() {
+            // For demonstration purposes, we'll simulate a successful connection
+            document.getElementById('destConnectSuccess').style.display = 'block';
+            document.getElementById('destConnectError').style.display = 'none';
+            
+            // Update step indicator
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step2').classList.add('completed');
+            document.getElementById('step3').classList.add('active');
+            
+            // Update tabs
+            document.getElementById('destination-tab').classList.add('completed');
+            
+            // Switch to next tab
+            document.getElementById('data-tab').click();
+        });
+        
+        // WebSocket for real-time progress updates
+        let socket;
+        
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/progress`;
+            
+            socket = new WebSocket(wsUrl);
+            
+            socket.onopen = function(e) {
+                console.log('WebSocket connection established');
+            };
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateMigrationProgress(data);
+            };
+            
+            socket.onclose = function(event) {
+                console.log('WebSocket connection closed');
+                setTimeout(connectWebSocket, 5000); // Reconnect after 5 seconds
+            };
+            
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+        }
+        
+        function updateMigrationProgress(data) {
+            const progressBar = document.querySelector('#migrationProgress .progress-bar');
+            const statusDiv = document.getElementById('migrationStatus');
+            
+            if (data.status === 'running') {
+                document.getElementById('migrationProgress').style.display = 'flex';
+                statusDiv.className = 'migration-status running';
+                progressBar.style.width = data.progress + '%';
+                progressBar.setAttribute('aria-valuenow', data.progress);
+                
+                statusDiv.innerHTML = `
+                    <div>
+                        <h6><i class="fas fa-sync fa-spin me-2"></i> Migration in Progress</h6>
+                        <div class="text-muted">
+                            Table: ${data.current_table} (${data.records_processed} records processed)<br>
+                            Elapsed time: ${data.elapsed_time}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('startMigrationBtn').style.display = 'none';
+                document.getElementById('cancelMigrationBtn').style.display = 'inline-block';
+                
+            } else if (data.status === 'completed') {
+                statusDiv.className = 'migration-status completed';
+                progressBar.style.width = '100%';
+                progressBar.setAttribute('aria-valuenow', 100);
+                
+                statusDiv.innerHTML = `
+                    <div>
+                        <h6><i class="fas fa-check-circle me-2"></i> Migration Completed</h6>
+                        <div class="text-muted">
+                            Successfully migrated ${data.total_records} records from ${data.total_tables} tables<br>
+                            Total time: ${data.total_time}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('startMigrationBtn').style.display = 'inline-block';
+                document.getElementById('cancelMigrationBtn').style.display = 'none';
+                
+                // Mark step 4 as completed
+                document.getElementById('step4').classList.remove('active');
+                document.getElementById('step4').classList.add('completed');
+                
+            } else if (data.status === 'failed') {
+                statusDiv.className = 'migration-status failed';
+                
+                statusDiv.innerHTML = `
+                    <div>
+                        <h6><i class="fas fa-exclamation-circle me-2"></i> Migration Failed</h6>
+                        <div class="text-muted">
+                            Error: ${data.error}<br>
+                            Table: ${data.current_table || 'N/A'}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('startMigrationBtn').style.display = 'inline-block';
+                document.getElementById('cancelMigrationBtn').style.display = 'none';
+            }
+        }
+        
+        // Connect to WebSocket when page loads
+        window.addEventListener('load', function() {
+            connectWebSocket();
+        });
+        
+        // Start Migration button click
+        document.getElementById('startMigrationBtn').addEventListener('click', function() {
+            // For demonstration purposes, we'll simulate a migration
+            document.getElementById('migrationProgress').style.display = 'flex';
+            document.getElementById('migrationStatus').className = 'migration-status running';
+            document.getElementById('migrationStatus').innerHTML = `
+                <div>
+                    <h6><i class="fas fa-sync fa-spin me-2"></i> Migration Starting...</h6>
+                    <div class="text-muted">
+                        Initializing migration process...
+                    </div>
+                </div>
+            `;
+            document.getElementById('startMigrationBtn').style.display = 'none';
+            document.getElementById('cancelMigrationBtn').style.display = 'inline-block';
+            
+            // Update progress bar simulation
+            let progress = 0;
+            const progressBar = document.querySelector('#migrationProgress .progress-bar');
+            const progressInterval = setInterval(function() {
+                progress += 5;
+                if (progress <= 100) {
+                    progressBar.style.width = progress + '%';
+                    progressBar.setAttribute('aria-valuenow', progress);
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 500);
+        });
+
+        // For demo: Validate Selection button
+        document.getElementById('validateSelectionBtn').addEventListener('click', function() {
+            document.getElementById('validateSuccess').style.display = 'block';
+            
+            // Update step indicator
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step3').classList.add('completed');
+            document.getElementById('step4').classList.add('active');
+            
+            // Update tabs
+            document.getElementById('data-tab').classList.add('completed');
+            
+            // Switch to next tab
+            setTimeout(function() {
+                document.getElementById('migrate-tab').click();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
